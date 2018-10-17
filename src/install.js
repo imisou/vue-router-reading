@@ -3,10 +3,17 @@ import Link from './components/link'
 
 export let _Vue
 
+/**
+    Vue.use(VueRouter)的执行流程(VueRouter的注册流程)
+ * @param {*} Vue
+ * @returns
+ */
 export function install(Vue) {
+    // 如果已经执行过Vue.use(VueRouter) return
     if (install.installed && _Vue === Vue) return
-    install.installed = true
 
+    install.installed = true
+    // 缓存 Vue
     _Vue = Vue
 
     const isDef = v => v !== undefined

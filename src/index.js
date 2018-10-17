@@ -32,6 +32,12 @@ export default class VueRouter {
     resolveHooks: Array << ? NavigationGuard > ;
     afterHooks: Array << ? AfterNavigationHook > ;
 
+
+
+    /*
+        
+    
+     */
     constructor(options: RouterOptions = {}) {
         this.app = null
         this.apps = []
@@ -162,8 +168,7 @@ export default class VueRouter {
         const route: any = to ?
             to.matched ?
             to :
-            this.resolve(to).route :
-            this.currentRoute
+            this.resolve(to).route : this.currentRoute
         if (!route) {
             return []
         }

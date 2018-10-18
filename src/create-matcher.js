@@ -23,20 +23,35 @@ export function createMatcher(
         createRouteMap(routes, pathList, pathMap, nameMap)
     }
 
+
+
+    /**
+     * 根据路径匹配路由
+     * @param {RawLocation} raw                当前URL上路由路径  '/parent'
+     * @param {Route} [currentRoute]           当前路由route对象  默认为  createRoute(null,{path:"/"})
+     * @param {Location} [redirectedFrom]
+     * @returns {Route}
+     */
     function match(
         raw: RawLocation,
         currentRoute ? : Route,
         redirectedFrom ? : Location
     ): Route {
+        // 处理 路径，生成路径对象的 path query hash
         const location = normalizeLocation(raw, currentRoute, false, router)
+        // 获取name属性
         const { name } = location
-
+        // 如果跳转以name为路径
         if (name) {
+            // 获取 record对象
             const record = nameMap[name]
             if (process.env.NODE_ENV !== 'production') {
                 warn(record, `Route with name '${name}' does not exist`)
             }
+            // 如果不存在 此命名路由 则创建一个 基础路由
             if (!record) return _createRoute(null, location)
+
+            // 动态路由参数 处理 如  'quy/:quyId'  params = ['quyId']
             const paramNames = record.regex.keys
                 .filter(key => !key.optional)
                 .map(key => key.name)
@@ -54,12 +69,15 @@ export function createMatcher(
             }
 
             if (record) {
+                // 将动态路由解析成真正的路径   'quy/:quyId'  => '/parent/quy/123'
                 location.path = fillParams(record.path, location.params, `named route "${name}"`)
                 return _createRoute(record, location, redirectedFrom)
             }
         } else if (location.path) {
+            // 如果不是按照命名路由 而是通过路径的方式跳转
             location.params = {}
             for (let i = 0; i < pathList.length; i++) {
+                // 
                 const path = pathList[i]
                 const record = pathMap[path]
                 if (matchRoute(record.regex, location.path, location.params)) {
@@ -172,19 +190,31 @@ export function createMatcher(
     }
 }
 
+
+
+/**
+ * 用当前跳转的路径去 匹配pathMap中存储的所有的路径record
+ 
+ * @param {RouteRegExp} regex         // 路径的正则
+ * @param {string} path               // 当前跳转的路径
+ * @param {Object} params             // 当前跳转的路径的动态参数
+ * @returns {boolean}
+ */
 function matchRoute(
     regex: RouteRegExp,
     path: string,
     params: Object
 ): boolean {
+    // 每一个路由recode的正则去匹配当前的路径
     const m = path.match(regex)
-
+    // 如果为null 说明匹配失败
     if (!m) {
         return false
     } else if (!params) {
         return true
     }
 
+    // 将路由匹配到的动态路由参数 存入到params中去
     for (let i = 1, len = m.length; i < len; ++i) {
         const key = regex.keys[i - 1]
         const val = typeof m[i] === 'string' ? decodeURIComponent(m[i]) : m[i]

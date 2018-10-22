@@ -13,6 +13,18 @@ export type Matcher = {
     addRoutes: (routes: Array < RouteConfig > ) => void;
 };
 
+
+
+
+
+
+
+/**
+ * 将 配置文件中的 routes 属性转换成 路由Map树
+ * @param {Array < RouteConfig >} routes
+ * @param {VueRouter} router
+ * @returns {Matcher}
+ */
 export function createMatcher(
     routes: Array < RouteConfig > ,
     router: VueRouter
@@ -170,19 +182,19 @@ export function createMatcher(
         return _createRoute(null, location)
     }
 
-    function _createRoute(
-        record: ? RouteRecord,
-        location : Location,
-        redirectedFrom ? : Location
-    ): Route {
-        if (record && record.redirect) {
-            return redirect(record, redirectedFrom || location)
-        }
-        if (record && record.matchAs) {
-            return alias(record, location, record.matchAs)
-        }
-        return createRoute(record, location, redirectedFrom, router)
+function _createRoute(
+    record: ? RouteRecord,
+    location : Location,
+    redirectedFrom ? : Location
+): Route {
+    if (record && record.redirect) {
+        return redirect(record, redirectedFrom || location)
     }
+    if (record && record.matchAs) {
+        return alias(record, location, record.matchAs)
+    }
+    return createRoute(record, location, redirectedFrom, router)
+}
 
     return {
         match,

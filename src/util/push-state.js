@@ -40,15 +40,23 @@ export function setStateKey(key: string) {
     _key = key
 }
 
+/**
+ * @通用的 修改浏览器状态的方法
+ * @param {string} [url]              新的URL地址
+ * @param {boolean} [replace]         是否参数历史记录
+ */
 export function pushState(url ? : string, replace ? : boolean) {
     saveScrollPosition();
     // try...catch the pushState call to get around Safari
     // DOM Exception 18 where it limits to 100 pushState calls
     const history = window.history
     try {
+
         if (replace) {
+            // 只是替换当前的记录 而不会产生新的历史记录
             history.replaceState({ key: _key }, '', url)
         } else {
+            // pushState  参数新的历史记录。
             _key = genKey()
             history.pushState({ key: _key }, '', url)
         }
@@ -57,6 +65,10 @@ export function pushState(url ? : string, replace ? : boolean) {
     }
 }
 
+/**
+ * 通用的 修改浏览器状态的replaceState方法，并且不产生历史记录
+ * @param {string} [url]
+ */
 export function replaceState(url ? : string) {
     pushState(url, true)
 }

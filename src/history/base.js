@@ -64,32 +64,49 @@ export class History {
         this.errorCbs.push(errorCb)
     }
 
-    
+
 
     /*
         路由跳转核心方法。
+        this.$router.push(location, onComplete?, onAbort?)
 
-
+      location :   地址路径
+        1、 可以直接为一个地址的字符串，如 'base/home'
+        2、 可以为一个地址对象  { 
+            _normalized?: boolean;
+            name?: string;
+            path?: string;
+            hash?: string;
+            query?: Dictionary<string>;
+            params?: Dictionary<string>;
+            append?: boolean;
+            replace?: boolean;
+        }
 
     */
-    transitionTo(location: RawLocation, onComplete ? : Function, onAbort ? : Function) {
-        // 
-        const route = this.router.match(location, this.current)
-        this.confirmTransition(route, () => {
-            this.updateRoute(route)
-            onComplete && onComplete(route)
-            this.ensureURL()
 
+    transitionTo(location: RawLocation, onComplete ? : Function, onAbort ? : Function) {
+        //生成 路由对象 
+        const route = this.router.match(location, this.current)
+
+        this.confirmTransition(route, () => {
+            this.updateRoute(route);
+            // 调用用户或者transitionTo中定义的 onComplete 回调函数
+            onComplete && onComplete(route)
+            this.ensureURL();
             // fire ready cbs once
             if (!this.ready) {
                 this.ready = true
                 this.readyCbs.forEach(cb => { cb(route) })
             }
         }, err => {
+            // 执行用户定义的onAbort方法
             if (onAbort) {
                 onAbort(err)
             }
+            // 执行 onReady方法，因为可能初始化的时候就about了而不是onComplete
             if (err && !this.ready) {
+                // 确保只执行一次ready方法
                 this.ready = true
                 this.readyErrorCbs.forEach(cb => { cb(err) })
             }
@@ -98,15 +115,21 @@ export class History {
 
     confirmTransition(route: Route, onComplete: Function, onAbort ? : Function) {
         const current = this.current
+
+        // 定义了 路由跳转失败的回调方法
         const abort = err => {
+            // 如果 路由中间截止了 且abort(‘Error’) 那么就执行全局定义的router.onError()回调方法
             if (isError(err)) {
                 if (this.errorCbs.length) {
+                    // 执行error回调方法
                     this.errorCbs.forEach(cb => { cb(err) })
                 } else {
+                    // 否则只是警告而已
                     warn(false, 'uncaught error during route navigation:')
                     console.error(err)
                 }
             }
+            // 调用this.confirmTransition(xx , xx , err)
             onAbort && onAbort(err)
         }
         if (
@@ -114,37 +137,49 @@ export class History {
             // in the case the route map has been dynamically appended to
             route.matched.length === current.matched.length
         ) {
+            // 修改当前的历史状态，不产生新的历史状态
             this.ensureURL()
             return abort()
         }
-
         // 获取当前路由跳转操作下 需要更新、激活、卸载的 RouteRecord对象
         const {
             updated,
             deactivated,
             activated
         } = resolveQueue(this.current.matched, route.matched)
-
         const queue: Array << ? NavigationGuard > = [].concat(
             // in-component leave guards
+            // 处理组件内的路由离开守卫 beforeRouteLeave
             extractLeaveGuards(deactivated),
             // global before hooks
+            // 处理 全局配置
             this.router.beforeHooks,
             // in-component update hooks
+            // 处理组件内的路由离开守卫 beforeRouteUpdate
             extractUpdateHooks(updated),
             // in-config enter guards
+            // 配置文件中的 beforeEnter
             activated.map(m => m.beforeEnter),
             // async components
+            // 加载异步组件
             resolveAsyncComponents(activated)
         )
-
         this.pending = route
+
+        /**
+         * 
+         * @param {*} hook    当前执行的钩子函数
+         * @param {*} next    runQueue中定义的 () => { step(index+1) }用来执行下一个钩子函数
+         */
         const iterator = (hook: NavigationGuard, next) => {
-            if (this.pending !== route) {
+            {
                 return abort()
             }
             try {
+                //执行 钩子函数  to, from , next
                 hook(route, current, (to: any) => {
+                    // 如果我们在钩子函数中 next(false) 或者 next('xxx Error')。
+                    // 这种情况没有调用next()  所以不会继续执行下面的钩子函数，整个跳转就会停止
                     if (to === false || isError(to)) {
                         // next(false) -> abort navigation, ensure current URL
                         this.ensureURL(true)
@@ -165,6 +200,7 @@ export class History {
                         }
                     } else {
                         // confirm transition and pass on the value
+                        // 这时候to 没有啥屁用。
                         next(to)
                     }
                 })
@@ -173,19 +209,29 @@ export class History {
             }
         }
 
+
+
         runQueue(queue, iterator, () => {
+
+            /*
+                下面处理导航解析流程 的 7 -> 最后步骤
+            */
             const postEnterCbs = []
-            const isValid = () => this.current === route
-                // wait until async components are resolved before
-                // extracting in-component enter guards
-            const enterGuards = extractEnterGuards(activated, postEnterCbs, isValid)
-            const queue = enterGuards.concat(this.router.resolveHooks)
+            const isValid = () => this.current === route;
+            // wait until async components are resolved before
+            // extracting in-component enter guards
+            // 获取到 组件中定义的 beforeRouteEnter钩子函数 (第7步)
+            const enterGuards = extractEnterGuards(activated, postEnterCbs, isValid);
+            // 将 调用全局的 beforeResolve 添加到 队列中  (第8步)
+            const queue = enterGuards.concat(this.router.resolveHooks);
+            // 执行钩子函数队列
             runQueue(queue, iterator, () => {
                 if (this.pending !== route) {
                     return abort()
                 }
                 this.pending = null
                 onComplete(route)
+                    // 用创建好的实例调用 beforeRouteEnter 守卫中传给 next 的回调函数。 (第12步)
                 if (this.router.app) {
                     this.router.app.$nextTick(() => {
                         postEnterCbs.forEach(cb => { cb() })
@@ -194,12 +240,16 @@ export class History {
             })
         })
     }
-
     updateRoute(route: Route) {
-        const prev = this.current
-        this.current = route
+        const prev = this.current;
+        // 将跳转的路径routeRecord赋给current。
+        this.current = route;
+
+        // 执行 this.listen定义的路由的监听回调函数
         this.cb && this.cb(route)
+            // 调用全局的 afterEach 钩子函数 (第10步)
         this.router.afterHooks.forEach(hook => {
+            // 执行全局的 afterEach 钩子函数，这时候就咩有第三个参数 next 了
             hook && hook(route, prev)
         })
     }
@@ -280,20 +330,48 @@ function resolveQueue(
     }
 }
 
+/**
+ * 处理路由组件上的钩子函数
+ * 我们知道 路由route上支持命名视图，其定义在components属性上
+ components : {
+    default : App,
+    b : threeComponent
+ }
+
+ * @param {Array < RouteRecord >} records              // 路由对象数组  [ route1, route2]
+ * @param {string} name                                // 当前处理的卫士类型,如 beforeLeave
+ * @param {Function} bind                              
+ * @param {boolean} [reverse]                          // 是否反转
+ * @returns {Array}
+ */
 function extractGuards(
     records: Array < RouteRecord > ,
     name: string,
     bind: Function,
     reverse ? : boolean
 ): Array << ? Function > {
+    /*
+        如 栗子中的 three12组件 其有两个命名视图 default 与 b ()
+        default 没有定义 beforeRouteLeave 钩子
+        b 中定义了 beforeRouteLeave 且为一个数组。
+
+        那么 guards = [ parentdefault , default , [bind1, bind2]]
+
+        即 [父component1 , 父component2 , 子component1 , 子component2[bind1, bind2] ]
+    */
     const guards = flatMapComponents(records, (def, instance, match, key) => {
-        const guard = extractGuard(def, name)
-        if (guard) {
-            return Array.isArray(guard) ?
-                guard.map(guard => bind(guard, instance, match, key)) :
-                bind(guard, instance, match, key)
-        }
-    })
+            // 获取组件上指定name的导航守卫钩子函数，如beforeRouteLeave,beforeRouteEnter,beforeRouteUpdate
+            const guard = extractGuard(def, name)
+                // 如果定义了此钩子函数
+            if (guard) {
+                // 说明钩子函数可以是数组类型
+                return Array.isArray(guard) ?
+                    guard.map(guard => bind(guard, instance, match, key)) :
+                    bind(guard, instance, match, key)
+            }
+        })
+        // 如果 是beforeRouteLeave  =》 [子component2-bind1, 子component2-bind2  , 子component1 , 父component2 , 父component1 ]
+        // 其他 [父component1 , 父component2 , 子component1 , 子component2-bind1, 子component2-bind2]
     return flatten(reverse ? guards.reverse() : guards)
 }
 
@@ -316,6 +394,13 @@ function extractUpdateHooks(updated: Array < RouteRecord > ): Array << ? Functio
     return extractGuards(updated, 'beforeRouteUpdate', bindGuard)
 }
 
+/**
+ * @description
+ * @author guzhanghua
+ * @param {NavigationGuard} guard                // 组件的钩子函数   如beforeRouteLeave,beforeRouteEnter,beforeRouteUpdate
+ * @param {? _Vue} instance                      // 组件instance属性  m.instances[key]
+ * @returns {? NavigationGuard}
+ */
 function bindGuard(guard: NavigationGuard, instance: ? _Vue): ? NavigationGuard {
     if (instance) {
         return function boundRouteGuard() {
@@ -324,9 +409,23 @@ function bindGuard(guard: NavigationGuard, instance: ? _Vue): ? NavigationGuard 
     }
 }
 
+
+/**
+ * 定义处理组件 beforeRouteEnter的钩子函数
+    beforeRouteEnter (to, from, next) {
+        next(vm => {
+            // 通过 `vm` 访问组件实例
+        })
+    }
+
+ * @param {Array < RouteRecord >} activated
+ * @param {Array < Function >} cbs
+ * @param {() => boolean} isValid
+ * @returns {Array}
+ */
 function extractEnterGuards(
     activated: Array < RouteRecord > ,
-    cbs: Array < Function > ,
+    cbs: Array < Function > , //用户自定义的beforeRouteEnter 钩子函数的回调函数
     isValid: () => boolean
 ) : Array << ? Function > {
     return extractGuards(activated, 'beforeRouteEnter', (guard, _, match, key) => {
@@ -345,6 +444,7 @@ function bindEnterGuard(
         return guard(to, from, cb => {
             next(cb)
             if (typeof cb === 'function') {
+                // 将 回调给 next来访问组件实例 的next(cbs) 缓存起来，将来在this.router.app.$nextTick(() => {})去统一执行
                 cbs.push(() => {
                     // #750
                     // if a router-view is wrapped with an out-in transition,

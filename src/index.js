@@ -35,16 +35,29 @@ export default class VueRouter {
 
 
     /*
-        
+       路由的初始化过程 3. Create the router  
+
+        const router = new VueRouter({
+            mode: 'history',
+            base: __dirname,
+            routes: [
+                { path: '/', component: Home },
+            ]
+        })
     
      */
     constructor(options: RouterOptions = {}) {
-        this.app = null
-        this.apps = []
-        this.options = options
-        this.beforeHooks = []
-        this.resolveHooks = []
-        this.afterHooks = []
+        this.app = null;
+        this.apps = [];
+        // 配置对象
+        this.options = options;
+        // 全局的 beforeEach 钩子函数缓存对象
+        this.beforeHooks = [];
+        // 全局的 resolveEach 钩子函数缓存对象
+        this.resolveHooks = [];
+        // 全局的 afterEach 钩子函数缓存对象
+        this.afterHooks = [];
+        // 创建路由的匹配对象
         this.matcher = createMatcher(options.routes || [], this)
 
         let mode = options.mode || 'hash'

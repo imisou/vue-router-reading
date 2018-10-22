@@ -4,6 +4,20 @@ import Regexp from 'path-to-regexp'
 import { cleanPath } from './util/path'
 import { assert, warn } from './util/warn'
 
+
+
+/**
+ * 创建路由的3个对象  pathMap、 pathList 、nameMap
+ * @param {Array < RouteConfig >} routes
+ * @param {Array < string >} [oldPathList]
+ * @param {Dictionary < RouteRecord >} [oldPathMap]
+ * @param {Dictionary < RouteRecord >} [oldNameMap]
+ * @returns {{
+ *     pathList: Array < string > ;
+ *     pathMap: Dictionary < RouteRecord > ;
+ *     nameMap: Dictionary < RouteRecord > ;
+ * }}
+ */
 export function createRouteMap(
     routes: Array < RouteConfig > ,
     oldPathList ? : Array < string > ,
@@ -15,13 +29,14 @@ export function createRouteMap(
     nameMap: Dictionary < RouteRecord > ;
 } {
     // the path list is used to control path matching priority
-    const pathList: Array < string > = oldPathList || []
-        // $flow-disable-line
-    const pathMap: Dictionary < RouteRecord > = oldPathMap || Object.create(null)
-        // $flow-disable-line
-    const nameMap: Dictionary < RouteRecord > = oldNameMap || Object.create(null)
+    const pathList: Array < string > = oldPathList || [];
+    // $flow-disable-line
+    const pathMap: Dictionary < RouteRecord > = oldPathMap || Object.create(null);
+    // $flow-disable-line
+    const nameMap: Dictionary < RouteRecord > = oldNameMap || Object.create(null);
 
     routes.forEach(route => {
+        // 深度遍历路由配置属性，将其转换成 routeRecord 树
         addRouteRecord(pathList, pathMap, nameMap, route)
     })
 
@@ -43,7 +58,6 @@ export function createRouteMap(
 
 
 /**
- * @description
  * xxx
   route : {
     path: string;
@@ -118,7 +132,7 @@ function addRouteRecord(
         components: route.components || { default: route.component },
         instances: {},
         name,
-        parent,
+        parent,                             // 当前路由RouteRecord的父路由RouteRecord对象
         matchAs,
         redirect: route.redirect,
         beforeEnter: route.beforeEnter,

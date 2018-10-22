@@ -11,7 +11,7 @@ import { extend } from './misc'
 /**
  * 格式化路径
 
- * @param {RawLocation} raw           跳转的路由的路径
+ * @param {RawLocation} raw           跳转的路由的路径,其可以直接为一个路径字符串，也可以为一个路径对象location
  * @param {? Route} current           当前路由的 route对象
  * @param {? boolean} append
  * @param {? VueRouter} router
@@ -50,20 +50,20 @@ export function normalizeLocation(
 
     // 解析路径 获取路径的query、hash 、path
     const parsedPath = parsePath(next.path || '')
-    // 当前路由 的路径
+        // 当前路由 的路径
     const basePath = (current && current.path) || '/'
-   
+
     const path = parsedPath.path ?
         resolvePath(parsedPath.path, basePath, append || next.append) :
-        basePath
-    
-        // 处理 路由中的参数  path 、 query
+        basePath;
+
+    // 处理 路由中的参数  path 、 query
     const query = resolveQuery(
         parsedPath.query,
         next.query,
         router && router.options.parseQuery
     )
-    
+
     // 处理 hash
     let hash = next.hash || parsedPath.hash
     if (hash && hash.charAt(0) !== '#') {

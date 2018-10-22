@@ -192,10 +192,16 @@ export default class VueRouter {
         }))
     }
 
+    /*
+        解析目标位置
+    
+    
+    
+    */
     resolve(
-        to: RawLocation,
-        current ? : Route,
-        append ? : boolean
+        to: RawLocation, // 路径字符串或者location对象
+        current ? : Route, // 当前路径routeRecord对象
+        append ? : boolean // 是否允许在current前添加附加路径
     ): {
         location: Location,
         route: Route,
@@ -204,6 +210,8 @@ export default class VueRouter {
         normalizedTo: Location,
         resolved: Route
     } {
+
+        // 格式化路径
         const location = normalizeLocation(
             to,
             current || this.history.current,

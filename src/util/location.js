@@ -31,16 +31,25 @@ export function normalizeLocation(
         return next
     }
 
-    // relative params
+    // relative params  
+    // 处理只修改动态路由上的动态参数的情况， 这时候只传params 而没有 path name等属性
     if (!next.path && next.params && current) {
+        // 复制一份
         next = extend({}, next)
-        next._normalized = true
+        next._normalized = true;
+
+        // 处理当存在多个动态参数的时候，只传递了一个，而其他的参数不修改
+        //  如 /order/:order/:orderType      /order/12/1 => { params : { orderType : 2}}
         const params: any = extend(extend({}, current.params), next.params)
+            // 如果当前的是明码路由，那么也保持原来的命名
         if (current.name) {
             next.name = current.name
+                // 目标路由对象params 修改成 完整的 参数
             next.params = params
         } else if (current.matched.length) {
-            const rawPath = current.matched[current.matched.length - 1].path
+            // 如果存在 匹配的 路由对象，那么就获取 最后一个路由(完整路由)的路径配置属性 
+            const rawPath = current.matched[current.matched.length - 1].path;
+            // 将当前的参数 填充到 路径配置属性rawPath中，形成真正的路径
             next.path = fillParams(rawPath, params, `path ${current.path}`)
         } else if (process.env.NODE_ENV !== 'production') {
             warn(false, `relative params navigation requires a current route.`)
@@ -49,8 +58,8 @@ export function normalizeLocation(
     }
 
     // 解析路径 获取路径的query、hash 、path
-    const parsedPath = parsePath(next.path || '')
-        // 当前路由 的路径
+    const parsedPath = parsePath(next.path || '');
+    // 当前路由 的路径
     const basePath = (current && current.path) || '/'
 
     const path = parsedPath.path ?

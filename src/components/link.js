@@ -10,25 +10,33 @@ const eventTypes: Array < Function > = [String, Array]
 export default {
     name: 'RouterLink',
     props: {
+        // 表示目标路由的链接 可以为字符串或者 location对象
         to: {
             type: toTypes,
             required: true
         },
+        // router-link 渲染成标签名
         tag: {
             type: String,
             default: 'a'
         },
         exact: Boolean,
+        // 在 当前路径前添加基路径 append 的时候 to="/a/b" => '/base/a/b'
         append: Boolean,
+        // 是否调用router.replace 而不是 router.push()
         replace: Boolean,
+        // 设置 链接激活时使用的 CSS 类名。
         activeClass: String,
+        // 配置当链接被精确匹配的时候应该激活的 clas
         exactActiveClass: String,
+        // 用来触发导航的事件。可以是一个字符串或是一个包含字符串的数组
         event: {
             type: eventTypes,
             default: 'click'
         }
     },
     render(h: Function) {
+        // 获取路由上的 router
         const router = this.$router
         const current = this.$route
         const { location, route, href } = router.resolve(this.to, current, this.append)

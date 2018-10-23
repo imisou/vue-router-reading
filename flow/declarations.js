@@ -77,6 +77,7 @@ declare type RouteRecord = {
   props: boolean | Object | Function | Dictionary<boolean | Object | Function>;
 }
 
+// 位置对象
 declare type Location = {
   _normalized?: boolean;
   name?: string;

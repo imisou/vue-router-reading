@@ -70,10 +70,19 @@ function getFullPath({ path, query = {}, hash = '' },
     return (path || '/') + stringify(query) + hash
 }
 
+
+/**
+ * 判断 a、b 两个路由是否是同一个路由
+ * @param {Route} a
+ * @param {? Route} b
+ * @returns {boolean}
+ */
 export function isSameRoute(a: Route, b: ? Route): boolean {
     if (b === START) {
+        // 如果 b 是默认路由 '/' 那么相同
         return a === b
     } else if (!b) {
+        // 如果b不存在 那么false
         return false
     } else if (a.path && b.path) {
         return (
@@ -82,6 +91,7 @@ export function isSameRoute(a: Route, b: ? Route): boolean {
             isObjectEqual(a.query, b.query)
         )
     } else if (a.name && b.name) {
+        // 命名路由的判断
         return (
             a.name === b.name &&
             a.hash === b.hash &&

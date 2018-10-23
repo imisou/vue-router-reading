@@ -8,8 +8,6 @@ import { warn, isError } from './warn'
 
 /**
  * 解决异步组件
-
-
  {
    component : (resolve) => require(['../views/404.vue'], resolve)
  }
